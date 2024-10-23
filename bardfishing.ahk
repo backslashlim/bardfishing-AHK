@@ -279,6 +279,7 @@ BSNumGet(num, type)
     return num
 }
 
+; I genuinely do not understand how this part of the code works I'm just trusting the magic
 parse_var_length(data)
 {
     value := 0

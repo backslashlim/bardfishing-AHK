@@ -26,7 +26,8 @@ j::
 }
 
 ; these coordinates need to be changed to be relative to the
-; window dimensions
+; window dimensions. Also the game can handle the clicks
+; at lightning speed so the input sendmode is used
 UpdateString(String,Finger)
 {
     Sendmode 'Input'
@@ -40,34 +41,50 @@ Main(Song)
     tabs := midiToEventArray('midi\' SongList[Song])
     tabs := eventArraytoTabs(tabs, tabs[1])
 
-
+    ; sets all strings to fret 0 then clears them to avoid
+    ; potentially unwanted notes
     Click 455, 80
     loop 6
     {
         UpdateString(A_Index,0)
     }
 
+    ; this doesn't need to be here exactly, but 30 ms delay is a good balance;
+    ; between too much delay between simultaneous notes and dropped inputs
     SetKeyDelay -1, 30
 
     KeysReference := ['q','w','e','r','t','y']
 
     Lasts := ['','','','','','']
 
+    ; the tabs array arrives to this loop looking like this:
+    ; [
+    ; <tempo in bpm>,
+    ; [<fret>,<fret>,<fret>,<fret>,<fret>,<fret>,<dT in beats>],
+    ; [etc,etc],
+    ; <tempo change if any>,
+    ; ]
+
     for chord in tabs
     {
+        ; hold L while playing to stop the music
         if NOT KeyWait('l', 'T0.001')
         {
             break
         }
 
+        ; tempo changes are stored in tabs as single values
         if IsNumber(chord)
         {
             tempo := chord
             continue
         }
 
+        ; we will concatenate the necessary qwerty keys into this string to strum the
+        ; desired strings for each chord
         PlayKeys := ''
 
+        ; epic coding
         for n in [1,2,3,4,5,6]
         {
             if isInteger(chord[n]) AND chord[n] != Lasts[n]

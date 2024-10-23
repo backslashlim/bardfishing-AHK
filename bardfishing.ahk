@@ -253,6 +253,10 @@ eventArraytoTabs(array,timeDivision)
     return tabs
 }
 
+; im actually kinda proud of the UWide byteswap I felt really clever using a bitshift
+; also can we talk about how stupid it is that ahk doesn't have a better
+; way of dealing with endianness
+; ...says the girl who is obstinately writing code in fricking autohotkey
 BSNumGet(num, type)
 {
     if type = 'UInt' {

@@ -26,11 +26,11 @@ j::
 ; these coordinates need to be changed to be relative to the
 ; window dimensions. Also the game can handle the clicks
 ; at lightning speed so the input sendmode is used
-UpdateString(String,Finger)
+UpdateString(String,Fret)
 {
     Sendmode 'Input'
     X := 260 + String * 27
-    Y := 90 + Finger * 50
+    Y := 90 + Fret * 50
     Click X, Y
 }
 

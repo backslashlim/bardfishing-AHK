@@ -125,8 +125,8 @@ midiToEventArray(filename)
     timeDivision := BSNumGet(timeDivision, 'UShort')
     
 
-    tabsarray := []
-    tabsarray.InsertAt(0,timeDivision)
+    eventArray := []
+    eventArray.InsertAt(0,timeDivision)
 
     while MidiFile.Pos < Midifile.Length {
         ;Read chunk parameters
@@ -154,14 +154,14 @@ midiToEventArray(filename)
                 metaType := NumGet(metaType, 'UChar')
 
                 if deltaTime != 0
-                    tabsarray.InsertAt(0,[0,deltaTime])
+                    eventArray.InsertAt(0,[0,deltaTime])
 
                 if metaType = 0x51 {
                     MidiFile.Pos += 1
                     MidiFile.RawRead(tempoChange := Buffer(3))
                     tempoChange := BSNumGet(tempoChange, "UWide")
                     tabsarray.InsertAt(0,tempoChange)
-                    debugMessage := '`ntempo change in position ' . String(tabsarray.Length) . ' from ' . String(MidiFile.Pos-1)
+                    debugMessage := '`ntempo change in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
                 }
                 else if metaType = 0x2F {
                     MidiFile.Pos += 1
@@ -177,7 +177,7 @@ midiToEventArray(filename)
                 length := parse_var_length(MidiFile)
                 MidiFile.Pos += length
                 if deltaTime != 0
-                    tabsarray.InsertAt(0,[0,deltaTime])
+                    eventArray.InsertAt(0,[0,deltaTime])
             }
             else {
                 status:
@@ -185,9 +185,9 @@ midiToEventArray(filename)
                     lastStatus := eventByte
                     MidiFile.RawRead(note := Buffer(1))
                     note := NumGet(note,'UChar')
-                    tabsarray.InsertAt(0,[note,deltaTime])
+                    eventArray.InsertAt(0,[note,deltaTime])
                     MidiFile.Pos += 1
-                    debugMessage := '`nnote in position ' . String(tabsarray.Length) . ' from ' . String(MidiFile.Pos-1)
+                    debugMessage := '`nnote in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
                 }
                 else if 0x80 <= eventByte AND eventByte <= 0x8F {
                     lastStatus := eventByte
@@ -214,7 +214,7 @@ midiToEventArray(filename)
             OutputDebug(debugMessage)
         }
     }
-    return tabsarray
+    return eventArray
 }
 
 eventArraytoTabs(array,timeDivision)

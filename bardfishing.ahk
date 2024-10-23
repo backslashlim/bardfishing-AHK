@@ -1,4 +1,4 @@
-﻿; Retrieve Available midi files
+; Retrieve Available midi files
 
 ; thank god i dont have any passwords in here
 SetWorkingDir('G:\Software\Webfishing midi\Mine')
@@ -153,14 +153,11 @@ midiToEventArray(filename)
                 MidiFile.RawRead(metaType := Buffer(1))
                 metaType := NumGet(metaType, 'UChar')
 
-                if deltaTime != 0
-                    eventArray.InsertAt(0,[0,deltaTime])
-
                 if metaType = 0x51 {
                     MidiFile.Pos += 1
                     MidiFile.RawRead(tempoChange := Buffer(3))
                     tempoChange := BSNumGet(tempoChange, "UWide")
-                    tabsarray.InsertAt(0,tempoChange)
+                    eventArray.InsertAt(0,tempoChange)
                     debugMessage := '`ntempo change in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
                 }
                 else if metaType = 0x2F {
@@ -170,14 +167,23 @@ midiToEventArray(filename)
                 else {
                     length := parse_var_length(MidiFile)
                     MidiFile.Pos += length
+                    debugMessage := '`nmeta event skipped ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
+                }
+                
+                if deltaTime != 0 {
+                    eventArray.InsertAt(0,[0,deltaTime])
+                    debugMessage := '`ntimed meta event in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
                 }
             }
             ;sysex shmysex who cares
             else If eventByte = 0xF0 or eventByte = 0xF7 {
                 length := parse_var_length(MidiFile)
                 MidiFile.Pos += length
-                if deltaTime != 0
+                
+                if deltaTime != 0 {
                     eventArray.InsertAt(0,[0,deltaTime])
+                    debugMessage := '`ntimed sysex event in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
+                }
             }
             else {
                 status:
@@ -185,25 +191,55 @@ midiToEventArray(filename)
                     lastStatus := eventByte
                     MidiFile.RawRead(note := Buffer(1))
                     note := NumGet(note,'UChar')
-                    eventArray.InsertAt(0,[note,deltaTime])
-                    MidiFile.Pos += 1
-                    debugMessage := '`nnote in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
+                    MidiFile.RawRead(velocity := Buffer(1))
+                    velocity := NumGet(velocity, 'UChar')
+
+                    ; Some notes have noteoff events as 0-velocity noteons. There are two categories of such events: 'encapsulations', and '0dT'
+                    ; encapsulations have a nonzero dT. 0dTs should be prevented from being written at all, while encapsulations should search
+                    ; backward through the array and remove their counterpart.
+                    if velocity = 0 AND deltaTime = 0{
+                        debugMessage := '`n0dt 0velocity noteon rejected from position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
+                    }
+                    else if velocity = 0 AND deltaTime != 0 {
+                        while true{
+                            if eventArray[eventArray.Length+1-A_Index][1] = note {
+                                eventArray.RemoveAt(eventArray.Length+1-A_Index)
+                                eventArray.InsertAt(0,[note,deltaTime])
+                                debugMessage := '`n0velocity noteon from ' . String(MidiFile.Pos-1) . ', corrected position ' . String(eventArray.Length+1-A_Index)
+                                break
+                            }
+                        }
+                    }
+                    else {
+                        eventArray.InsertAt(0,[note,deltaTime])
+                        debugMessage := '`nnote on ' . String(note) . ' in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
+                    }
+                        
+
                 }
                 else if 0x80 <= eventByte AND eventByte <= 0x8F {
                     lastStatus := eventByte
                     MidiFile.Pos += 2
+                    if deltaTime != 0
+                        eventArray.InsertAt(0,[0,deltaTime])
                 }
                 else if 0xA0 <= eventByte AND eventByte <= 0xBF {
                     lastStatus := eventByte
                     MidiFile.Pos += 2
+                    if deltaTime != 0
+                        eventArray.InsertAt(0,[0,deltaTime])
                 }
                 else if 0xC0 <= eventByte AND eventByte <= 0xDF {
                     lastStatus := eventByte
                     MidiFile.Pos += 1
+                    if deltaTime != 0
+                        eventArray.InsertAt(0,[0,deltaTime])
                 }
                 else if 0xE0 <= eventByte AND eventByte <= 0xEF {
                     lastStatus := eventByte
                     MidiFile.Pos += 2
+                    if deltaTime != 0
+                        eventArray.InsertAt(0,[0,deltaTime])
                 }
                 else{
                     eventByte := lastStatus
@@ -222,7 +258,8 @@ eventArraytoTabs(array,timeDivision)
     array.RemoveAt(1)
     openStrings := [40,45,50,55,59,64]
     tabs := []
-    toSort := []
+    toSort := ''
+    sortedArray := []
     currentChord := ['','','','','','',0]
     for event in array {
         if IsInteger(event) {
@@ -230,15 +267,19 @@ eventArraytoTabs(array,timeDivision)
             tabs.InsertAt(0,event)
         }
         else if event[2] = 0 {
-            toSort.InsertAt(0,event[1])
+            toSort .= String(event[1]) . ','
         }
         else if event[2] = 1{
             continue
         }
         else {
-            toSort.InsertAt(0,event[1])
+            toSort .= String(event[1])
             currentChord[7] := event[2]/timeDivision
-            for note in toSort {
+            toSort := Sort(toSort,'N D, R')
+            loop parse toSort, ','
+                sortedArray.InsertAt(0,Number(A_LoopField))
+            
+            for note in sortedArray {
                 if note < 40 OR note > 79
                     continue
                 loop 6 {
@@ -251,7 +292,8 @@ eventArraytoTabs(array,timeDivision)
                 }
             }
             tabs.InsertAt(0,currentChord)
-            toSort := []
+            toSort := ''
+            sortedArray := []
             currentChord := ['','','','','','',0]
             
         }

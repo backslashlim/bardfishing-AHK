@@ -1,7 +1,10 @@
 ﻿; Retrieve Available midi files
 
+; thank god i dont have any passwords in here
 SetWorkingDir('G:\Software\Webfishing midi\Mine')
 
+; grabs all midi files from an adjacent directory and creates a GUI
+; with a drop down list so the user can select the song to play
 SongList := []
 loop files "midi\*.mid"
     SongList.InsertAt(0, A_LoopFileName)
@@ -22,6 +25,8 @@ j::
     goto ShowMenu
 }
 
+; these coordinates need to be changed to be relative to the
+; window dimensions
 UpdateString(String,Finger)
 {
     Sendmode 'Input'

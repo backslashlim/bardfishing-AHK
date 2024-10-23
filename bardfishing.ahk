@@ -1,7 +1,5 @@
-; Retrieve Available midi files
-
-; thank god i dont have any passwords in here
-SetWorkingDir('G:\Software\Webfishing midi\Mine')
+if not DirExist('midi')
+    DirCreate('midi')
 
 ; grabs all midi files from an adjacent directory and creates a GUI
 ; with a drop down list so the user can select the song to play

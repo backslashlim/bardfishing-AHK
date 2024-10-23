@@ -98,9 +98,12 @@ Main(Song)
             }
         }
 
+        ; sendmode event as determined through trial and error
         Sendmode 'Event'
         Send PlayKeys
 
+        ; in a just and perfect world this should be multiplied by 30 not 25 but anyway
+        ; this accounts for the dT between chords
         Sleep (chord[7]*60000/tempo)-StrLen(PlayKeys)*25
     }
 }
@@ -143,6 +146,9 @@ midiToEventArray(filename)
             MidiFile.RawRead(eventByte := Buffer(1))
             eventByte := NumGet(eventByte, 'UChar')
 
+            ; we only care about meta events if they change the tempo
+            ; or have a nonzero dT. It's possible I'm missing some edge case event types
+            ; here, there seem to be more than are documented in any one place
             if eventByte = 0xFF { ; Meta events
                 MidiFile.RawRead(metaType := Buffer(1))
                 metaType := NumGet(metaType, 'UChar')
@@ -166,6 +172,7 @@ midiToEventArray(filename)
                     MidiFile.Pos += length
                 }
             }
+            ;sysex shmysex who cares
             else If eventByte = 0xF0 or eventByte = 0xF7 {
                 length := parse_var_length(MidiFile)
                 MidiFile.Pos += length

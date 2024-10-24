@@ -187,6 +187,7 @@ midiToEventArray(filename)
                 status:
                 if 0x90 <= eventByte AND eventByte <= 0x9F {
                     lastStatus := eventByte
+                    channel := eventByte - 0x90
                     MidiFile.RawRead(note := Buffer(1))
                     note := NumGet(note,'UChar')
                     MidiFile.RawRead(velocity := Buffer(1))
@@ -202,14 +203,14 @@ midiToEventArray(filename)
                         while true{
                             if eventArray[eventArray.Length+1-A_Index][1] = note {
                                 eventArray.RemoveAt(eventArray.Length+1-A_Index)
-                                eventArray.InsertAt(0,[note,deltaTime])
+                                eventArray.InsertAt(0,[note,deltaTime, 'channel ' channel])
                                 debugMessage := '`n0velocity noteon from ' . String(MidiFile.Pos-1) . ', corrected position ' . String(eventArray.Length+1-A_Index)
                                 break
                             }
                         }
                     }
                     else {
-                        eventArray.InsertAt(0,[note,deltaTime])
+                        eventArray.InsertAt(0,[note,deltaTime, 'channel ' channel])
                         debugMessage := '`nnote on ' . String(note) . ' in position ' . String(eventArray.Length) . ' from ' . String(MidiFile.Pos-1)
                     }
                         
